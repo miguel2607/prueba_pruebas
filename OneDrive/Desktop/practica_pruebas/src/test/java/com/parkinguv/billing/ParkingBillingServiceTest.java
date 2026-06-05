@@ -22,4 +22,18 @@ public class ParkingBillingServiceTest {
         // Assert
         assertEquals(0, cost, "El costo para 0 minutos debe ser 0");
     }
+
+    @Test
+    public void testCalculateCost_ThirtyMinutes_ReturnZero() {
+        // Arrange
+        ParkingBillingService service = new ParkingBillingService();
+        int minutes = 30;
+        boolean isVIP = false;
+
+        // Act
+        int cost = service.calculateCost(minutes, isVIP);
+
+        // Assert
+        assertEquals(0, cost, "El costo para 30 minutos debe ser 0 (limite periodo gratuito)");
+    }
 }
