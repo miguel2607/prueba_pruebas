@@ -31,19 +31,29 @@ public class ParkingBillingService {
             return 0;
         }
 
-        return calculateHourlyCost(minutes);
+        int cost = calculateHourlyCost(minutes);
+        return applyDailyCap(cost);
     }
 
     /**
      * Calcula el costo basado en la tarifa por hora
      *
      * @param minutes Minutos totales de estacionamiento
-     * @return Costo calculado por hora o fraccion, con tope diario aplicado
+     * @return Costo calculado por hora o fraccion
      */
     private int calculateHourlyCost(int minutes) {
         int chargeableMinutes = minutes - FREE_PERIOD_MINUTES;
         int hours = (int) Math.ceil((double) chargeableMinutes / MINUTES_PER_HOUR);
-        int cost = hours * HOURLY_RATE;
+        return hours * HOURLY_RATE;
+    }
+
+    /**
+     * Aplica el tope diario al costo calculado
+     *
+     * @param cost Costo calculado sin tope
+     * @return Costo con tope diario aplicado
+     */
+    private int applyDailyCap(int cost) {
         return Math.min(cost, DAILY_CAP);
     }
 

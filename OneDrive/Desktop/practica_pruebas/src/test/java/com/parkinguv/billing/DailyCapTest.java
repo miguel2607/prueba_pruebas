@@ -10,10 +10,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class DailyCapTest {
 
     @Test
+    public void testCalculateCost_1439Minutes_ReturnUnderCap() {
+        // Arrange
+        ParkingBillingService service = new ParkingBillingService();
+        int minutes = 1439; // 23h 59min
+        boolean isVIP = false;
+
+        // Act
+        int cost = service.calculateCost(minutes, isVIP);
+
+        // Assert
+        assertEquals(12000, cost, "El costo para 1439 minutos debe aplicar tope de 12000");
+    }
+
+    @Test
     public void testCalculateCost_1440Minutes_ReturnTwelveThousand() {
         // Arrange
         ParkingBillingService service = new ParkingBillingService();
-        int minutes = 1440; // 24 horas
+        int minutes = 1440; // 24 horas exactas
         boolean isVIP = false;
 
         // Act
@@ -21,6 +35,20 @@ public class DailyCapTest {
 
         // Assert
         assertEquals(12000, cost, "El costo para 1440 minutos (24h) debe ser 12000 (tope diario)");
+    }
+
+    @Test
+    public void testCalculateCost_1441Minutes_ReturnTwelveThousand() {
+        // Arrange
+        ParkingBillingService service = new ParkingBillingService();
+        int minutes = 1441; // Mas de 24 horas
+        boolean isVIP = false;
+
+        // Act
+        int cost = service.calculateCost(minutes, isVIP);
+
+        // Assert
+        assertEquals(12000, cost, "El costo para 1441 minutos no debe exceder el tope de 12000");
     }
 
     @Test
