@@ -14,6 +14,7 @@ public class ParkingBillingService {
     private static final int FREE_PERIOD_MINUTES = 30;
     private static final int HOURLY_RATE = 500;
     private static final int MINUTES_PER_HOUR = 60;
+    private static final int DAILY_CAP = 12000;
 
     /**
      * Calcula el costo de estacionamiento basado en el tiempo y tipo de cliente
@@ -37,12 +38,13 @@ public class ParkingBillingService {
      * Calcula el costo basado en la tarifa por hora
      *
      * @param minutes Minutos totales de estacionamiento
-     * @return Costo calculado por hora o fraccion
+     * @return Costo calculado por hora o fraccion, con tope diario aplicado
      */
     private int calculateHourlyCost(int minutes) {
         int chargeableMinutes = minutes - FREE_PERIOD_MINUTES;
         int hours = (int) Math.ceil((double) chargeableMinutes / MINUTES_PER_HOUR);
-        return hours * HOURLY_RATE;
+        int cost = hours * HOURLY_RATE;
+        return Math.min(cost, DAILY_CAP);
     }
 
     /**
