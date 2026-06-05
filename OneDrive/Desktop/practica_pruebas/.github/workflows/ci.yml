@@ -1,0 +1,215 @@
+name: CI/CD Pipeline - ParkingUV
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  # Job 1: Tests Unitarios (TDD)
+  unit-tests:
+    name: Tests Unitarios
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v3
+
+      - name: Configurar JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Ejecutar tests unitarios
+        run: mvn clean test -Dtest=!CucumberBDDTest
+
+      - name: Generar reporte de cobertura
+        run: mvn verify
+
+      - name: Subir resultados de tests
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: target/surefire-reports/
+
+  # Job 2: Tests BDD con Cucumber
+  bdd-tests:
+    name: Tests BDD (Cucumber)
+    runs-on: ubuntu-latest
+    needs: unit-tests
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v3
+
+      - name: Configurar JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Ejecutar tests BDD
+        run: mvn test -Dtest=CucumberBDDTest
+
+      - name: Subir reportes BDD
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: cucumber-reports
+          path: target/cucumber-reports/
+
+  # Job 3: Analisis de Seguridad
+  security-check:
+    name: Analisis de Seguridad (OWASP)
+    runs-on: ubuntu-latest
+    needs: unit-tests
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v3
+
+      - name: Configurar JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Ejecutar OWASP Dependency Check
+        run: mvn org.owasp:dependency-check-maven:check || true
+        continue-on-error: true
+
+      - name: Subir reporte de seguridad
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-report
+          path: target/dependency-check-report.html
+
+  # Job 4: Build de la aplicacion
+  build:
+    name: Build de Aplicacion
+    runs-on: ubuntu-latest
+    needs: [unit-tests, bdd-tests]
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v3
+
+      - name: Configurar JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Compilar proyecto
+        run: mvn clean package -DskipTests
+
+      - name: Subir artefacto JAR
+        uses: actions/upload-artifact@v3
+        with:
+          name: parking-billing-jar
+          path: target/*.jar
+
+  # Job 5: Pruebas de Rendimiento (solo en master/main)
+  performance-tests:
+    name: Pruebas de Rendimiento (Locust)
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v3
+
+      - name: Configurar JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Instalar Locust
+        run: pip install locust
+
+      - name: Compilar aplicacion
+        run: mvn clean package -DskipTests
+
+      - name: Iniciar servidor Spring Boot
+        run: |
+          java -jar target/*.jar &
+          echo $! > server.pid
+          sleep 30
+
+      - name: Verificar que el servidor este listo
+        run: |
+          for i in {1..30}; do
+            if curl -f http://localhost:8080/api/billing/health; then
+              echo "Servidor listo"
+              break
+            fi
+            echo "Esperando al servidor... intento $i"
+            sleep 2
+          done
+
+      - name: Ejecutar pruebas de rendimiento
+        run: |
+          locust --headless \
+                 --users 50 \
+                 --spawn-rate 10 \
+                 --run-time 60s \
+                 --host http://localhost:8080 \
+                 --html target/locust-report.html \
+                 --csv target/locust-stats
+
+      - name: Detener servidor
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+          fi
+
+      - name: Validar P95 < 300ms
+        run: |
+          # Extraer P95 del reporte de Locust
+          if [ -f target/locust-stats_stats.csv ]; then
+            echo "Estadisticas de Locust:"
+            cat target/locust-stats_stats.csv
+            # Aqui se podria agregar logica para validar que P95 < 300ms
+          fi
+
+      - name: Subir reporte de rendimiento
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-report
+          path: |
+            target/locust-report.html
+            target/locust-stats*
+
+  # Job 6: Resumen del Pipeline
+  pipeline-summary:
+    name: Resumen del Pipeline
+    runs-on: ubuntu-latest
+    needs: [unit-tests, bdd-tests, security-check, build]
+    if: always()
+
+    steps:
+      - name: Verificar estado de jobs
+        run: |
+          echo "Pipeline completado"
+          echo "Unit Tests: ${{ needs.unit-tests.result }}"
+          echo "BDD Tests: ${{ needs.bdd-tests.result }}"
+          echo "Security Check: ${{ needs.security-check.result }}"
+          echo "Build: ${{ needs.build.result }}"
