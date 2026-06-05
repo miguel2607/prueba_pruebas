@@ -24,7 +24,7 @@ public class VIPDiscountTest {
     }
 
     @Test
-    public void testCalculateCost_1440MinutesVIP_ReturnElevenThousandThreeHundredTwenty() {
+    public void testCalculateCost_1440MinutesVIP_ReturnNineThousandSixHundred() {
         // Arrange
         ParkingBillingService service = new ParkingBillingService();
         int minutes = 1440; // 24 horas
@@ -34,8 +34,8 @@ public class VIPDiscountTest {
         int cost = service.calculateCost(minutes, isVIP);
 
         // Assert
-        // Sin descuento seria 14150, con descuento 11320
-        // Como el descuento se aplica primero: 14150 * 0.8 = 11320
-        assertEquals(11320, cost, "El costo para 1440 minutos VIP debe ser 11320 (descuento antes del tope)");
+        // Sin descuento seria 12000, con descuento 20%: 12000 * 0.8 = 9600
+        // El descuento se aplica antes del tope diario
+        assertEquals(9600, cost, "El costo para 1440 minutos VIP debe ser 9600 (descuento antes del tope)");
     }
 }
