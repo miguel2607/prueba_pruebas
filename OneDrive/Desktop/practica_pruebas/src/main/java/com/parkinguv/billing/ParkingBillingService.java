@@ -12,6 +12,8 @@ package com.parkinguv.billing;
 public class ParkingBillingService {
 
     private static final int FREE_PERIOD_MINUTES = 30;
+    private static final int HOURLY_RATE = 500;
+    private static final int MINUTES_PER_HOUR = 60;
 
     /**
      * Calcula el costo de estacionamiento basado en el tiempo y tipo de cliente
@@ -28,7 +30,9 @@ public class ParkingBillingService {
             return 0;
         }
 
-        return 0;
+        int chargeableMinutes = minutes - FREE_PERIOD_MINUTES;
+        int hours = (int) Math.ceil((double) chargeableMinutes / MINUTES_PER_HOUR);
+        return hours * HOURLY_RATE;
     }
 
     /**
