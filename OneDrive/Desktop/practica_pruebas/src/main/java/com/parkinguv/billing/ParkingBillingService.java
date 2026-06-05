@@ -30,6 +30,16 @@ public class ParkingBillingService {
             return 0;
         }
 
+        return calculateHourlyCost(minutes);
+    }
+
+    /**
+     * Calcula el costo basado en la tarifa por hora
+     *
+     * @param minutes Minutos totales de estacionamiento
+     * @return Costo calculado por hora o fraccion
+     */
+    private int calculateHourlyCost(int minutes) {
         int chargeableMinutes = minutes - FREE_PERIOD_MINUTES;
         int hours = (int) Math.ceil((double) chargeableMinutes / MINUTES_PER_HOUR);
         return hours * HOURLY_RATE;
