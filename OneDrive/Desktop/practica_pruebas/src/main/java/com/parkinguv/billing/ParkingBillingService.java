@@ -15,6 +15,7 @@ public class ParkingBillingService {
     private static final int HOURLY_RATE = 500;
     private static final int MINUTES_PER_HOUR = 60;
     private static final int DAILY_CAP = 12000;
+    private static final double VIP_DISCOUNT = 0.20;
 
     /**
      * Calcula el costo de estacionamiento basado en el tiempo y tipo de cliente
@@ -32,6 +33,11 @@ public class ParkingBillingService {
         }
 
         int cost = calculateHourlyCost(minutes);
+
+        if (isVIP) {
+            cost = applyVIPDiscount(cost);
+        }
+
         return applyDailyCap(cost);
     }
 
@@ -45,6 +51,16 @@ public class ParkingBillingService {
         int chargeableMinutes = minutes - FREE_PERIOD_MINUTES;
         int hours = (int) Math.ceil((double) chargeableMinutes / MINUTES_PER_HOUR);
         return hours * HOURLY_RATE;
+    }
+
+    /**
+     * Aplica el descuento VIP al costo
+     *
+     * @param cost Costo calculado sin descuento
+     * @return Costo con descuento VIP del 20% aplicado
+     */
+    private int applyVIPDiscount(int cost) {
+        return (int) (cost * (1 - VIP_DISCOUNT));
     }
 
     /**

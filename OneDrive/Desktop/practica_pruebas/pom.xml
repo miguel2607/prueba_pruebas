@@ -19,9 +19,17 @@
         <junit.version>5.9.3</junit.version>
         <cucumber.version>7.14.0</cucumber.version>
         <gatling.version>3.9.5</gatling.version>
+        <spring-boot.version>2.7.14</spring-boot.version>
     </properties>
 
     <dependencies>
+        <!-- Spring Boot para API REST -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <version>${spring-boot.version}</version>
+        </dependency>
+
         <!-- JUnit 5 para TDD -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
